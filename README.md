@@ -1,7 +1,12 @@
 # MavenToPKGBUILD
 Create packages for Arch linux (AUR) for Maven dependencies. 
 
-The packages are installed in `/usr/share/java`, as it is recommanded in the PKGBUILD for [java guide](https://wiki.archlinux.org/index.php/Java_package_guidelines). For now and in the future I try to stick to the official guidelines. 
+The packages are installed in `/usr/share/java`, as it is recommended in the PKGBUILD for [java guide](https://wiki.archlinux.org/index.php/Java_package_guidelines). For now and in the future I try to stick to the official guidelines. 
+
+This is a first implementation to manage dependencies for java programs that share jar files. The goal is to distribute java programs and its dependencies separated in a clean way. 
+However the current risk is that we have to create dozens or hundreds of packages for large projects.
+
+Please do not submit the generated PKGBUILDs to the ArchLinux repository without filling out all the required informations. 
 
 ## How to use
 
