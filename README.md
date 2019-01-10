@@ -5,7 +5,7 @@ The packages are installed in `/usr/share/java`, as it is recommanded in the PKG
 
 ## How to use
 
-1. Build a specific project:
+#### 1. Build a specific project:
 
 `ruby builder-java.rb DATABASE.yaml PROJECT`
 
@@ -13,7 +13,7 @@ You can try it:
 
 `ruby builder-java.rb package.yaml jedis` 
 
-2. Build all the projects: 
+#### 2. Build all the projects: 
 
 
 Create a package for each dependency in the database. It is quite simple for now and does not handle double entry or version conflicts.
@@ -23,7 +23,7 @@ Create a package for each dependency in the database. It is quite simple for now
 You can try it: 
 `ruby builder-java.rb package.yaml all` 
 
-3. Build a package by its name. 
+#### 3. Build a package by its name. 
 
 You can also try it: 
 
