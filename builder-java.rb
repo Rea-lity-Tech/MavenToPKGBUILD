@@ -102,7 +102,8 @@ POM
   
   Dir.chdir name
   `makepkg -f >> build.log`
-
+  `cp *.pkg.tar.xz ../pkgs`
+  
   Dir.chdir currentdir
   
   puts "Finished, you can check the folder #{name}."
