@@ -27,7 +27,7 @@ You can try it:
 
 You can also try it: 
 
-`ruby builder-java.rb redis redis.clients 2.9.0` 
+`ruby builder-java.rb jedis redis.clients 2.9.0` 
 
 
 ## Installing a package 
