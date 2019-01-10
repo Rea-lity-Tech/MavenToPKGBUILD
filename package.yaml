@@ -1,0 +1,9 @@
+---
+jedis:
+  artifactid: jedis
+  groupid: redis.clients
+  version: 2.9.0
+commons-pool2:
+  artifactid: commons-pool2
+  groupid: org.apache.commons
+  version: 2.4.2
