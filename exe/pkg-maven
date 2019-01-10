@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+
+require 'MavenToPKGBUILD'
+
+include MavenToPKGBUILD
+
+if(ARGV.size <= 1)
+  puts  "Not enough arguments:  name groupid version [artifactId]"
+end
+
+
+if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
+  files = YAML.load_file ARGV[0]
+  
+  # case 1: build all.
+  if(ARGV[1].eql? "all")
+    files.values.each{ |pkg| build_pkg(pkg) }
+    return
+  end
+  
+  # case 2: build a specific one
+  pkg = files[ARGV[1]]
+  unless pkg.nil?
+    build_pkg(pkg)
+    return
+  end
+
+  return
+end
+  
+# case 3: build from command line.
+if(ARGV.size < 3)
+  puts "Not enough arguments:  name groupid version [artifactId]"
+  return
+end
+
+name = ARGV[0]         # redis
+groupid = ARGV[1]      # redis.clients
+version = ARGV[2]      # 2.9.0
+
+artifactid = name  
+artifactid = ARGV[3] if ARGV.size > 3 # jedis
+
+# build it !
+build(name, groupid, version, artifactid)
