@@ -26,6 +26,7 @@ Create a package for each dependency in the database. It is quite simple for now
 `ruby builder-java.rb DATABASE.yaml all`
 
 You can try it: 
+
 `ruby builder-java.rb package.yaml all` 
 
 #### 3. Build a package by its name. 
@@ -34,12 +35,25 @@ You can also try it:
 
 `ruby builder-java.rb jedis redis.clients 2.9.0` 
 
+This will create a package for **one jar only**. You can get get its dependencies by going in the folder and running the `deps.rb` script. 
+
+``` bash 
+cd jedis
+ruby ../depts.rb jedis.yaml   ## here jedis.yaml is the output file name, the default is deps.yaml
+```
+You can then use the `jedis.yaml` to create more packages !
 
 ## Installing a package 
 
-After the package(s) are build, you can install it with pacman. 
+After the package(s) are built, you can install it with pacman. 
 
 Here is an example: 
 
 `sudo pacman -U pkgs/java-jedis-2.9.0-1-any.pkg.tar.xz`
 
+
+### TODO: 
+
+* Gemify this. 
+* Better parsing. 
+* Large scale tests.
