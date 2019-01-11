@@ -1,7 +1,6 @@
 require "MavenToPKGBUILD/version"
 
 require 'yaml'
-require 'pry'
 
 
 module MavenToPKGBUILD

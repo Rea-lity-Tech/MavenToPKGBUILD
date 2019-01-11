@@ -2,9 +2,7 @@
 
 require 'optparse'
 
-require '../lib/MavenToPKGBUILD'
-
-
+require 'MavenToPKGBUILD'
 
 options = {}
 op = OptionParser.new do |opts|
