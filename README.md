@@ -59,12 +59,6 @@ With this modification, the package name will be: `java-redis`.
 
 There are three ways to build a package. Either you want to package a specific jar, a jar with packages for each dependency, or a jar with its dependency included in one big jar. 
 
-### Single package 
-
-`  `
-
-### 
-
 
 ## Installing a package 
 
@@ -73,6 +67,16 @@ After the package(s) are built, you can install it with pacman.
 Here is an example: 
 
 `sudo pacman -U pkgs/java-jedis-2.9.0-1-any.pkg.tar.xz`
+
+
+## Running an application 
+
+The program `pkg-maven-list-deps` creates a `classpath.txt` that contains all the dependencies. You can use this way: 
+
+``` bash
+CP=$(<classpath.txt)
+java -cp $CP:target/* tech.lity.rea.nectar.camera.Test
+``` 
 
 
 ### TODO: 

@@ -20,6 +20,10 @@ op = OptionParser.new do |opts|
     options[:arch] = n
   end
 
+  opts.on("-vVERSION", "--version=VERSION", "Minor version, default is 1.") do |n|
+    options[:version] = n
+  end
+
   opts.on("-h", "--help", "Prints this help") do
     puts opts
     exit
@@ -37,14 +41,6 @@ end
 
 include MavenToPKGBUILD
 
-arch = "x86_64"
-arch = options[:arch] unless options[:arch].nil? 
-
-full = false
-full = options[:full] unless options[:full].nil?
-
-compact = false
-compact = options[:compact] unless options[:compact].nil?
 
 if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
   files = YAML.load_file ARGV[0]
@@ -62,14 +58,14 @@ if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
     end.compact!
     ## reject the empty ones created by next
     
-    without_platform.each{ |pkg| puts "BUILD" + pkg.to_s ; build_pkg(pkg, arch, full, compact) }
+    without_platform.each{ |pkg| puts "BUILD" + pkg.to_s ; build_pkg(pkg, options) }
     return
   end
   
   # case 2: build a specific one
   pkg = files[ARGV[1]]
   unless pkg.nil?
-    build_pkg(pkg, arch, full, compact)
+    build_pkg(pkg, options)
     return
   end
 
@@ -92,4 +88,4 @@ arch = ARGV[3] unless  ARGV[3].nil?
 #artifactid = ARGV[3] if ARGV.size > 3 # jedis
 
 # build it !
-build(name, groupid, version, artifactid, arch, full, compact)
+build(name, groupid, version, artifactid, options)

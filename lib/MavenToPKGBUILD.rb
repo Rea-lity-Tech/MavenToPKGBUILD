@@ -1,26 +1,43 @@
-require "MavenToPKGBUILD/version"
-
 require 'yaml'
+require "MavenToPKGBUILD/version"
 
 
 module MavenToPKGBUILD
 
-  def build(name, groupid, version, artifactid, arch="x86_64", full=false, compact=false)
-    puts "Starting to build #{name}, #{groupid}, #{version}, #{artifactid}. "
+  def create_pkg_version(version)
+    version.delete_prefix("'").delete_suffix("'").split("-").first
+  end
+  
+  def build_pkg(pkg, options)
+    build(pkg["name"], pkg["groupid"], pkg["version"], pkg["artifactid"], options)
+  end
 
-    javacpp = false
-    pkgversion = version
+  def build(name, groupid, version, artifactid, options) # arch="x86_64", full=false, compact=false)
+
+    name = artifactid if  name.nil?
+
+    arch = "x86_64"
+    arch = options[:arch] unless options[:arch].nil? 
     
-    ## Sometimes there are quotes in version names.
-    pkgversion = pkgversion.delete_prefix("'").delete_suffix("'")
+    full = false
+    full = options[:full] unless options[:full].nil?
+    
+    compact = false
+    compact = options[:compact] unless options[:compact].nil?
+
     pkgrel = "1"
+    pkgrel = options[:version] unless options[:version].nil?
+    
+    puts "Starting to build #{name}, #{groupid}, #{version}, #{artifactid}. "
+    
+    javacpp = false
+
+    ## Sometimes there are quotes in version names.
+    pkgversion = version.delete_prefix("'").delete_suffix("'")
+
     javacppversion = ""
-
-
-#    binding.pry
-  # groupid: org.bytedeco.javacpp-presets
-  # artifactid: opencv-platform
-  # version: 3.4.0-1.4
+    compact_pkg = ""
+    compact_pkg = "-compact" if compact
 
     platform = "linux"
     foldername = name
@@ -32,7 +49,7 @@ module MavenToPKGBUILD
       javacpp = true
       name = artifactid.split("-platform").first
       pkgversion, javacppversion = pkgversion.split "-"
-      pkgrel = javacppversion
+      pkgrel = javacppversion+pkgrel
       pkgarch = arch 
     else
         pkgversion = pkgversion.split("-").first
@@ -45,8 +62,6 @@ module MavenToPKGBUILD
     rescue => e
 
     end
-    compact_pkg = ""
-    compact_pkg = "-compact" if compact
     
     ## 2. create the PGKBUILD
     pkgbuild = <<-PKGBUILD 
@@ -134,6 +149,7 @@ PKGBUILD3
      install -m644 -D ${startdir}/target/dependency/${artifact}-#{version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}.jar
      cd ${pkgdir}/usr/share/java/
      ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name.jar
+     ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name-${pkgver}.jar
  }
 
  installCompact() {
@@ -167,6 +183,8 @@ PKGBUILD3
 
 PKGBUILD4
 
+ ## Install in a maven-like environment ?
+ ## ${groupId.replace('.','/')}/${artifactId}/${version}/${artifactId}-${version}${classifier==null?'':'-'+classifier}.${type}
 
     pkgbuild = pkgbuild + pkgbuild2 + pkgbuild3 + pkgbuild4
  
@@ -182,7 +200,7 @@ PKGBUILD4
     <modelVersion>4.0.0</modelVersion>
     <groupId>tech.lity.rea</groupId>
     <artifactId>#{name}</artifactId>
-    <version>#{version}</version>
+    <version>1-dummy</version>
     <packaging>jar</packaging>
 
     <name>#{name}</name>
@@ -265,10 +283,6 @@ POM2
 
   end
 
-  def build_pkg(pkg, arch, full, compact)
-    pkg["name"] = pkg["artifactid"] if  pkg["name"].nil?
-    build(pkg["name"], pkg["groupid"], pkg["version"], pkg["artifactid"], arch, full, compact)
-  end
 
 
 

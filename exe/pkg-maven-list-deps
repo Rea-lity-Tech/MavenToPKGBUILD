@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 
 require 'yaml'
+require 'MavenToPKGBUILD'
+
+include MavenToPKGBUILD
 
 if ARGV[0] != nil
   output = ARGV[0]
@@ -21,19 +24,49 @@ lines = File.readlines tmp
 lines = lines.drop 2 
 
 all_deps = {} 
+all_deps_jar = ""
+prefix = "/usr/share/java/"
 
 lines.each do |l|
   groupid, artifactid, type, version = l.strip.split ":"
 
   next if artifactid.nil? or artifactid.empty?
 
-  puts "Dependency: " + artifactid.to_s
+#   puts "Dependency: " + artifactid.to_s
   dep = {}
   dep["groupid"] = groupid
   dep["artifactid"] = artifactid
   dep["version"] = version
-  #  dep["type"] = type
+
   all_deps[artifactid] = dep
+end 
+
+
+# TODO: Ignore completely ?!!
+without_platform = all_deps.map do |dep|
+  next if all_deps.has_key?(dep[0]+"-platform")
+  dep[1]
+end.compact!
+## reject the empty ones created by next
+
+without_platform.each do |dep|
+  ## jar name 
+  v = create_pkg_version(dep["version"])
+  n = dep["artifactid"]
+
+  dep_file =  prefix + n + "-" + v + ".jar"
+
+  if File.exist?(dep_file)
+    puts "File FOUND: " + dep_file
+  else 
+    puts "Missing : " + dep_file
+  end
+  
+  all_deps_jar = all_deps_jar + ":" unless all_deps_jar.empty?
+  all_deps_jar = all_deps_jar + dep_file
 end
 
+
 File.open(output, 'w') {|f| f.write all_deps.to_yaml }
+File.open("classpath.txt", 'w') {|f| f.write all_deps_jar }
+
