@@ -6,3 +6,7 @@
 /pkg/
 /spec/reports/
 /tmp/
+/test/
+/jedis/
+/redis/
+/commons-pool2/

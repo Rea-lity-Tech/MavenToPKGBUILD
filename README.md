@@ -43,6 +43,18 @@ ruby ../depts.rb jedis.yaml   ## here jedis.yaml is the output file name, the de
 ```
 You can then use the `jedis.yaml` to create more packages !
 
+If the generated name does not seem correct, you can add a `name` field: 
+
+``` yaml
+jedis:
+  groupid: redis.clients
+  artifactid: jedis
+  version: 2.9.0
+  name: redis
+``` 
+
+With this modification, the package name will be: `java-redis`. 
+
 ## Installing a package 
 
 After the package(s) are built, you can install it with pacman. 
