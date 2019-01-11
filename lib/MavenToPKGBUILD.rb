@@ -4,8 +4,6 @@ require 'yaml'
 
 
 module MavenToPKGBUILD
-  # Your code goes here...
-
 
   def build(name, groupid, version, artifactid, arch="x86_64", full=false, compact=false)
     puts "Starting to build #{name}, #{groupid}, #{version}, #{artifactid}. "
@@ -47,11 +45,13 @@ module MavenToPKGBUILD
     rescue => e
 
     end
-
+    compact_pkg = ""
+    compact_pkg = "-compact" if compact
+    
     ## 2. create the PGKBUILD
     pkgbuild = <<-PKGBUILD 
 # Maintainer: RealityTech <laviole@rea.lity.tech>
-pkgname=java-#{name}
+pkgname=java-#{name}#{compact_pkg}
 pkgver=#{pkgversion}
 pkgrel=#{pkgrel}
 pkgdesc=""

@@ -12,34 +12,34 @@ Please do not submit the generated PKGBUILDs to the ArchLinux repository without
 
 #### 1. Build a specific project:
 
-`ruby builder-java.rb DATABASE.yaml PROJECT`
+`pkg-maven DATABASE.yaml PROJECT`
 
 You can try it: 
 
-`ruby builder-java.rb package.yaml jedis` 
+`pkg-maven package.yaml jedis` 
 
 #### 2. Build all the projects: 
 
 
 Create a package for each dependency in the database. It is quite simple for now and does not handle double entry or version conflicts.
 
-`ruby builder-java.rb DATABASE.yaml all`
+`pkg-maven DATABASE.yaml all`
 
 You can try it: 
 
-`ruby builder-java.rb package.yaml all` 
+`pkg-maven package.yaml all` 
 
 #### 3. Build a package by its name. 
 
 You can also try it: 
 
-`ruby builder-java.rb jedis redis.clients 2.9.0` 
+`pkg-maven jedis redis.clients 2.9.0` 
 
-This will create a package for **one jar only**. You can get get its dependencies by going in the folder and running the `deps.rb` script. 
+This will create a package for **one jar only**. You can get get its dependencies by going in the folder and running the `pkg-maven-list-deps` script. 
 
 ``` bash 
 cd jedis
-ruby ../depts.rb jedis.yaml   ## here jedis.yaml is the output file name, the default is deps.yaml
+pkg-maven-list-deps jedis.yaml   ## here jedis.yaml is the output file name, the default is deps.yaml
 ```
 You can then use the `jedis.yaml` to create more packages !
 
@@ -54,6 +54,17 @@ jedis:
 ``` 
 
 With this modification, the package name will be: `java-redis`. 
+
+## Options 
+
+There are three ways to build a package. Either you want to package a specific jar, a jar with packages for each dependency, or a jar with its dependency included in one big jar. 
+
+### Single package 
+
+`  `
+
+### 
+
 
 ## Installing a package 
 
