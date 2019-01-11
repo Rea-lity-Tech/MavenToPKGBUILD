@@ -6,8 +6,16 @@ else
   output = "deps.yaml"
 end
 
+# platforms = ["linux", "windows", "macosx"]
+# archs = ["x86_64", "x86", "arm"]
+
+
+# platform="linux"
+# arch="x86_64"
+
 tmp = "tmp.txt"
-`mvn dependency:list -DoutputFile=#{tmp}`
+`mvn dependency:list -Djavacpp.platform=linux-x86_64 -DoutputFile=#{tmp}`
+
 
 lines = File.readlines tmp
 lines = lines.drop 2 

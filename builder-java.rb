@@ -1,6 +1,6 @@
 require 'yaml'
 
-def build(name, groupid, version, artifactid)
+def build(name, groupid, pkgversion, version, artifactid)
   puts "Starting to build #{name}, #{groupid}, #{version}, #{artifactid}. "
 
   
@@ -13,10 +13,12 @@ end
 
   ## 2. create the PGKBUILD
 
+arch = "linux-x86_64"
+
   pkgbuild = <<-PKGBUILD 
 # Maintainer: RealityTech <laviole@rea.lity.tech>
 pkgname=java-#{name}
-pkgver=#{version}
+pkgver=#{pkgversion}
 pkgrel=1
 pkgdesc=""
 arch=('any')
@@ -31,15 +33,25 @@ replaces=()
 
 build() {
   cd "$startdir"
-  mvn dependency:copy-dependencies
+  mvn -Djavacpp.platform=linux-x86_64 dependency:copy-dependencies
 }
 
 package() {
   local name='#{name}'
-  
-  install -m644 -D $startdir/target/dependency/${name}-${pkgver}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}.jar
+
+
+  install -m644 -D $startdir/target/dependency/${name}-#{version}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-#{version}.jar
   cd ${pkgdir}/usr/share/java
-  ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name.jar
+  ln -sr ${name}/${pkgver}/${name}-#{version}.jar $name.jar
+
+## TODO: check if it ends with -platform
+  if [ ! -f $startdir/target/dependency/${name}-#{version}-#{arch}.jar ]; then
+    install -m644 -D $startdir/target/dependency/${name}-#{version}-#{arch}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-#{version}-#{arch}.jar
+    cd ${pkgdir}/usr/share/java
+    ln -sr ${name}/${pkgver}/${name}-#{version}-#{arch}.jar $name-#{arch}.jar
+  fi
+
+
 }
 
 PKGBUILD
@@ -114,7 +126,13 @@ end
 
 def build_pkg(pkg)
   pkg["name"] = pkg["artifactid"] if  pkg["name"].nil?
-  build(pkg["name"], pkg["groupid"], pkg["version"], pkg["artifactid"])
+
+  ## Warning HACK
+  ## TODO: extract more info
+  pkgver = (pkg["version"].split "-")[0]
+  pkgver = pkgver.delete_prefix("'").delete_suffix("'")
+  
+  build(pkg["name"], pkg["groupid"], pkgver, pkg["version"], pkg["artifactid"])
 end
 
 if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
@@ -150,4 +168,4 @@ artifactid = name
 artifactid = ARGV[3] if ARGV.size > 3 # jedis
 
 # build it !
-build(name, groupid, version, artifactid)
+build(name, groupid, version, version, artifactid)
