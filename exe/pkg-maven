@@ -1,15 +1,45 @@
 #!/usr/bin/env ruby
 
+require 'optparse'
+
 require '../lib/MavenToPKGBUILD'
+
+
+
+options = {}
+op = OptionParser.new do |opts|
+  opts.banner = "Usage: pkg-maven file.yaml [name/all] [options]"
+
+  opts.on("-f", "--full", "Fetch all dependencies") do |v|
+    options[:full] = v
+  end
+
+  opts.on("-aARCH", "--arch=ARCH", "Selected architure, x86_64 by default.") do |n|
+    options[:arch] = n
+  end
+
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+end
+op.parse!
+
+if(ARGV.size <= 1)
+  puts op
+  exit
+end
+
+# p options
+# p ARGV
 
 include MavenToPKGBUILD
 
-if(ARGV.size <= 1)
-  puts  "Not enough arguments:  name groupid version [artifactId]"
-end
-
 arch = "x86_64"
+arch = options[:arch] unless options[:arch].nil? 
 
+full = false
+full = options[:full] unless options[:full].nil?
 
 if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
   files = YAML.load_file ARGV[0]
@@ -18,14 +48,14 @@ if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
   
   # case 1: build all.
   if(ARGV[1].eql? "all")
-    files.values.each{ |pkg| build_pkg(pkg, arch) }
+    files.values.each{ |pkg| build_pkg(pkg, arch, full) }
     return
   end
   
   # case 2: build a specific one
   pkg = files[ARGV[1]]
   unless pkg.nil?
-    build_pkg(pkg, arch)
+    build_pkg(pkg, arch, full)
     return
   end
 
@@ -48,4 +78,4 @@ arch = ARGV[3] unless  ARGV[3].nil?
 #artifactid = ARGV[3] if ARGV.size > 3 # jedis
 
 # build it !
-build(name, groupid, version, artifactid, arch)
+build(name, groupid, version, artifactid, arch, full)
