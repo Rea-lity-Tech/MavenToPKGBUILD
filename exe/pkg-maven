@@ -14,6 +14,10 @@ op = OptionParser.new do |opts|
     options[:full] = v
   end
 
+  opts.on("-c", "--compact", "Put all dependencies with the jar") do |v|
+    options[:compact] = v
+  end
+
   opts.on("-aARCH", "--arch=ARCH", "Selected architure, x86_64 by default.") do |n|
     options[:arch] = n
   end
@@ -41,6 +45,9 @@ arch = options[:arch] unless options[:arch].nil?
 full = false
 full = options[:full] unless options[:full].nil?
 
+compact = false
+compact = options[:compact] unless options[:compact].nil?
+
 if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
   files = YAML.load_file ARGV[0]
 
@@ -48,14 +55,23 @@ if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
   
   # case 1: build all.
   if(ARGV[1].eql? "all")
-    files.values.each{ |pkg| build_pkg(pkg, arch, full) }
+
+    ## Filter the non-platform deps from javacpp-presets
+
+    without_platform = files.map do |dep|
+      next if files.has_key?(dep[0]+"-platform")
+      dep[1]
+    end.compact!
+    ## reject the empty ones created by next
+    
+    without_platform.each{ |pkg| puts "BUILD" + pkg.to_s ; build_pkg(pkg, arch, full, compact) }
     return
   end
   
   # case 2: build a specific one
   pkg = files[ARGV[1]]
   unless pkg.nil?
-    build_pkg(pkg, arch, full)
+    build_pkg(pkg, arch, full, compact)
     return
   end
 
@@ -78,4 +94,4 @@ arch = ARGV[3] unless  ARGV[3].nil?
 #artifactid = ARGV[3] if ARGV.size > 3 # jedis
 
 # build it !
-build(name, groupid, version, artifactid, arch, full)
+build(name, groupid, version, artifactid, arch, full, compact)

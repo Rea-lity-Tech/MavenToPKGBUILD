@@ -8,7 +8,7 @@ module MavenToPKGBUILD
   # Your code goes here...
 
 
-  def build(name, groupid, version, artifactid, arch="x86_64")
+  def build(name, groupid, version, artifactid, arch="x86_64", full=false, compact=false)
     puts "Starting to build #{name}, #{groupid}, #{version}, #{artifactid}. "
 
     javacpp = false
@@ -37,11 +37,14 @@ module MavenToPKGBUILD
       pkgversion, javacppversion = pkgversion.split "-"
       pkgrel = javacppversion
       pkgarch = arch 
+    else
+        pkgversion = pkgversion.split("-").first
     end
     
     ## 1. build the directory
     begin 
       Dir.mkdir foldername
+      Dir.mkdir "pkgs"
     rescue => e
 
     end
@@ -73,7 +76,11 @@ PKGBUILD
     else
       pkgbuild = pkgbuild + "  mvn dependency:copy-dependencies -Djavacpp.platform=#{platform}-#{arch} \n "
     end
-    
+
+    if compact
+      pkgbuild = pkgbuild + "  mvn package -Djavacpp.platform=#{platform}-#{arch} \n "
+    end
+
     ## Continue building
     pkgbuild2 = <<-PKGBUILD2
     
@@ -83,14 +90,21 @@ package() {
 
 PKGBUILD2
 
-
     # opencv-3.4.0-1.4.jar          ->  #{name}-#{version}-#{javacppversion}.jar
     # opencv-platform-3.4.0-1.4.jar ->  #{name}-platform-#{version}-#{javacppversion}.jar
     # opencv-3.4.0-1.4-linux-x86_64.jar ->  #{name}-#{version}-#{javacppversion}-#{platform}-#{arch}.jar
     # javacpp-1.4.jar -> javacpp-#{javacppversion}.jar   ## Not sure yet!
 
-    if javacpp
-      pkgbuild3 = <<-PKGBUILD3
+    if compact
+      pkgbuild3 = "  installCompact '#{name}' '#{artifactid}' '-jar-with-dependencies' \n"
+      
+    else 
+    
+      if full
+        pkgbuild3 = " installAll '#{name}'" 
+    else 
+      if javacpp
+        pkgbuild3 = <<-PKGBUILD3
 
          # jar-name, output-jar-name, link-name 
         installJavaCPP '#{name}-#{pkgversion}-#{javacppversion}.jar' '#{name}-#{pkgversion}.jar' '#{name}.jar'       
@@ -99,13 +113,15 @@ PKGBUILD2
         installJavaCPP '#{name}-#{pkgversion}-#{javacppversion}-#{platform}-#{arch}.jar' '#{name}-#{pkgversion}-#{platform}-#{arch}.jar' '#{name}-#{platform}-#{arch}.jar'       
 
       PKGBUILD3
-      
-    else 
-      pkgbuild3 = <<-PKGBUILD3
+        
+      else 
+        pkgbuild3 = <<-PKGBUILD3
  
         installOne '#{name}' '#{artifactid}'
 
 PKGBUILD3
+      end
+      end
     end
       
  pkgbuild4 = <<-PKGBUILD4
@@ -115,9 +131,28 @@ PKGBUILD3
  installOne() {
      local name=$1
      local artifact=$2
-     install -m644 -D ${startdir}/target/dependency/${artifact}-${pkgver}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}.jar
+     local opt=$3
+     install -m644 -D ${startdir}/target/dependency/${artifact}-#{version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}.jar
      cd ${pkgdir}/usr/share/java/
      ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name.jar
+ }
+
+ installCompact() {
+     local name=$1
+     local artifact=$2
+     local opt=$3
+     install -m644 -D ${startdir}/target/${name}-#{version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}${opt}.jar
+     cd ${pkgdir}/usr/share/java/
+     ln -sr ${name}/${pkgver}/${name}-${pkgver}${opt}.jar $name${opt}.jar
+ }
+
+
+ installAll() {
+     local name=$1
+     mkdir -p ${pkgdir}/usr/share/java/${name}-with-deps/${pkgver}
+     install -m644 -D ${startdir}/target/dependency/*.jar ${pkgdir}/usr/share/java/${name}-with-deps/${pkgver}/
+     # links ?
+     # ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name.jar
  }
 
  installJavaCPP() {
@@ -184,10 +219,37 @@ PKGBUILD4
 	<version>#{version}</version>
       </dependency>
     </dependencies>
-</project>
 POM
 
+    if compact
+      pom = pom + <<-POM2
 
+    <build>
+       <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+         </plugins>
+      </build>
+POM2
+    end 
+
+    pom = pom + " </project> "
+    
     # write pom
     puts "Writing pom..."
     File.open(foldername+"/pom.xml", 'w') { |file| file.write(pom) }
@@ -204,9 +266,9 @@ POM
 
   end
 
-  def build_pkg(pkg, arch)
+  def build_pkg(pkg, arch, full, compact)
     pkg["name"] = pkg["artifactid"] if  pkg["name"].nil?
-    build(pkg["name"], pkg["groupid"], pkg["version"], pkg["artifactid"], arch)
+    build(pkg["name"], pkg["groupid"], pkg["version"], pkg["artifactid"], arch, full, compact)
   end
 
 
