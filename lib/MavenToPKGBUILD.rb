@@ -14,131 +14,150 @@ module MavenToPKGBUILD
 
   def build(name, groupid, version, artifactid, options) # arch="x86_64", full=false, compact=false)
 
-    name = artifactid if  name.nil?
+    ## Arguments, Pom variables
+    @artifactid = artifactid
+    @version = version
+    @groupid = groupid
+    @full = full
+    @name = artifactid if  name.nil?
+    @foldername = @name
 
-    arch = "x86_64"
-    arch = options[:arch] unless options[:arch].nil? 
-    
-    full = false
-    full = options[:full] unless options[:full].nil?
-    
-    compact = false
-    compact = options[:compact] unless options[:compact].nil?
+    ## Options
+    @arch = options.fetch :arch, "x86_64"
+    @full = options.fetch :full, false
+    @compact = options.fetch :compact, false
 
-    pkgrel = "1"
-    pkgrel = options[:version] unless options[:version].nil?
-    
-    puts "Starting to build #{name}, #{groupid}, #{version}, #{artifactid}. "
-    
-    javacpp = false
-
+    ## PKGBUILD variables
     ## Sometimes there are quotes in version names.
-    pkgversion = version.delete_prefix("'").delete_suffix("'")
+    @pkgversion = @version.delete_prefix("'").delete_suffix("'")
+    @pkgarch = "any" 
+    @pkgrel = options.fetch :version, "1"
+    @compact_pkg = @compact ? "-compact" : ""
 
-    javacppversion = ""
-    compact_pkg = ""
-    compact_pkg = "-compact" if compact
-
-    platform = "linux"
-    foldername = name
-
-    pkgarch = "any" 
     
-    if(groupid.eql? "org.bytedeco.javacpp-presets" and artifactid.end_with? "-platform")
+    ## JavaCPP variables
+    @javacppversion = ""
+    @platform = "linux"
+    @javacpp = false
+
+    puts "Starting to build #{@name}, #{@groupid}, #{@version}, #{@artifactid}. "
+    
+    if(@groupid.eql? "org.bytedeco.javacpp-presets" and @artifactid.end_with? "-platform")
       puts "JavaCPP platform building"
-      javacpp = true
-      name = artifactid.split("-platform").first
-      pkgversion, javacppversion = pkgversion.split "-"
-      pkgrel = javacppversion+pkgrel
-      pkgarch = arch 
+      @javacpp = true
+      @name = @artifactid.split("-platform").first
+      @pkgversion, @javacppversion = @pkgversion.split "-"
+      @pkgrel = @javacppversion+@pkgrel
+      @pkgarch = @arch 
     else
-        pkgversion = pkgversion.split("-").first
+        @pkgversion = @pkgversion.split("-").first
     end
     
-    ## 1. build the directory
+    create_directories()
+    pkgbuild = build_pkgbuild()
+    
+    # write pkgbuild
+    puts "writing pkgbuild..."
+    File.open(@foldername+"/PKGBUILD", 'w') { |file| file.write(pkgbuild) }
+
+    pom = build_pom()
+    puts "Writing pom..."
+    File.open(@foldername+"/pom.xml", 'w') { |file| file.write(pom) }
+
+    ## make the package
+    currentdir = Dir.pwd
+    Dir.chdir @foldername
+    `makepkg -f >> build.log`
+    `cp *.pkg.tar.xz ../pkgs`
+    Dir.chdir currentdir
+    
+    puts "Finished, you can check the folder #{@name}."
+
+  end
+
+  def create_directories()
     begin 
-      Dir.mkdir foldername
+      Dir.mkdir @foldername
       Dir.mkdir "pkgs"
     rescue => e
-
     end
-    
-    ## 2. create the PGKBUILD
-    pkgbuild = <<-PKGBUILD 
+  end
+
+  def build_pkgbuild
+
+    config = <<-CONFIG 
 # Maintainer: RealityTech <laviole@rea.lity.tech>
-pkgname=java-#{name}#{compact_pkg}
-pkgver=#{pkgversion}
-pkgrel=#{pkgrel}
+pkgname=java-#{@name}#{@compact_pkg}
+pkgver=#{@pkgversion}
+pkgrel=#{@pkgrel}
 pkgdesc=""
-arch=('#{pkgarch}')
+arch=('#{@pkgarch}')
 url=""
-license=('GPL')
+license=()
 groups=()
 depends=('java-runtime')
-makedepends=('maven' 'jdk8-openjdk' 'git')
-provides=("${pkgname%-git}")
-conflicts=("${pkgname%-git}")
+makedepends=('maven' 'jdk8-openjdk')
+provides=()
+conflicts=()
 replaces=()
 
 build() {
   cd "$startdir"
 
-PKGBUILD
+CONFIG
     
-    if javacpp
-      pkgbuild = pkgbuild + "  mvn dependency:copy-dependencies\n "
+    if @javacpp
+      config = config + "  mvn dependency:copy-dependencies\n "
     else
-      pkgbuild = pkgbuild + "  mvn dependency:copy-dependencies -Djavacpp.platform=#{platform}-#{arch} \n "
+      config = config + "  mvn dependency:copy-dependencies -Djavacpp.platform=#{@platform}-#{arch} \n "
     end
 
-    if compact
-      pkgbuild = pkgbuild + "  mvn package -Djavacpp.platform=#{platform}-#{arch} \n "
+    if @compact
+      config = config + "  mvn package -Djavacpp.platform=#{@platform}-#{arch} \n "
     end
 
     ## Continue building
-    pkgbuild2 = <<-PKGBUILD2
-    
+    package = <<-PACKAGE
 }
 
 package() {
 
-PKGBUILD2
+PACKAGE
 
-    # opencv-3.4.0-1.4.jar          ->  #{name}-#{version}-#{javacppversion}.jar
-    # opencv-platform-3.4.0-1.4.jar ->  #{name}-platform-#{version}-#{javacppversion}.jar
-    # opencv-3.4.0-1.4-linux-x86_64.jar ->  #{name}-#{version}-#{javacppversion}-#{platform}-#{arch}.jar
-    # javacpp-1.4.jar -> javacpp-#{javacppversion}.jar   ## Not sure yet!
 
-    if compact
-      pkgbuild3 = "  installCompact '#{name}' '#{artifactid}' '-jar-with-dependencies' \n"
+    if @compact
+      install = "  installCompact '#{@name}' '#{@artifactid}' '-jar-with-dependencies' \n"
       
     else 
-    
-      if full
-        pkgbuild3 = " installAll '#{name}'" 
-    else 
-      if javacpp
-        pkgbuild3 = <<-PKGBUILD3
-
-         # jar-name, output-jar-name, link-name 
-        installJavaCPP '#{name}-#{pkgversion}-#{javacppversion}.jar' '#{name}-#{pkgversion}.jar' '#{name}.jar'       
-        installJavaCPP '#{name}-platform-#{pkgversion}-#{javacppversion}.jar' '#{name}-platform-#{pkgversion}.jar' '#{name}-platform.jar'       
- 
-        installJavaCPP '#{name}-#{pkgversion}-#{javacppversion}-#{platform}-#{arch}.jar' '#{name}-#{pkgversion}-#{platform}-#{arch}.jar' '#{name}-#{platform}-#{arch}.jar'       
-
-      PKGBUILD3
-        
+      
+      if @full
+        install = " installAll '#{@name}'" 
       else 
-        pkgbuild3 = <<-PKGBUILD3
- 
-        installOne '#{name}' '#{artifactid}'
+        if @javacpp
 
-PKGBUILD3
-      end
+          # opencv-3.4.0-1.4.jar          ->  #{name}-#{version}-#{javacppversion}.jar
+          # opencv-platform-3.4.0-1.4.jar ->  #{name}-platform-#{version}-#{javacppversion}.jar
+          # opencv-3.4.0-1.4-linux-x86_64.jar ->  #{name}-#{version}-#{javacppversion}-#{@platform}-#{arch}.jar
+          # javacpp-1.4.jar -> javacpp-#{javacppversion}.jar   ## Not sure yet!
+
+          install = <<-INSTALL
+         # jar-name, output-jar-name, link-name 
+        installJavaCPP '#{@name}-#{@pkgversion}-#{@javacppversion}.jar' '#{@name}-#{@pkgversion}.jar' '#{@name}.jar'       
+        installJavaCPP '#{@name}-platform-#{@pkgversion}-#{@javacppversion}.jar' '#{@name}-platform-#{@pkgversion}.jar' '#{@name}-platform.jar'       
+        installJavaCPP '#{@name}-#{@pkgversion}-#{@javacppversion}-#{@platform}-#{arch}.jar' '#{@name}-#{@pkgversion}-#{@platform}-#{arch}.jar' '#{@name}-#{@platform}-#{arch}.jar'       
+
+      INSTALL
+        else 
+          install = <<-INSTALL
+ 
+        installOne '#{@name}' '#{@artifactid}'
+
+INSTALL
+        end
       end
     end
-      
- pkgbuild4 = <<-PKGBUILD4
+    
+    functions = <<-FUNCTIONS
 
 }
 
@@ -146,7 +165,7 @@ PKGBUILD3
      local name=$1
      local artifact=$2
      local opt=$3
-     install -m644 -D ${startdir}/target/dependency/${artifact}-#{version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}.jar
+     install -m644 -D ${startdir}/target/dependency/${artifact}-#{@version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}.jar
      cd ${pkgdir}/usr/share/java/
      ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name.jar
      ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name-${pkgver}.jar
@@ -156,11 +175,10 @@ PKGBUILD3
      local name=$1
      local artifact=$2
      local opt=$3
-     install -m644 -D ${startdir}/target/${name}-#{version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}${opt}.jar
+     install -m644 -D ${startdir}/target/${name}-#{@version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}${opt}.jar
      cd ${pkgdir}/usr/share/java/
      ln -sr ${name}/${pkgver}/${name}-${pkgver}${opt}.jar $name${opt}.jar
  }
-
 
  installAll() {
      local name=$1
@@ -174,36 +192,37 @@ PKGBUILD3
      local jarname=$1
      local outputname=$2
      local name=$3
-     install -m644 -D ${startdir}/target/dependency/${jarname} ${pkgdir}/usr/share/java/#{name}/${pkgver}/${outputname}
+     install -m644 -D ${startdir}/target/dependency/${jarname} ${pkgdir}/usr/share/java/#{@name}/${pkgver}/${outputname}
      cd ${pkgdir}/usr/share/java/
-     ln -sr #{name}/${pkgver}/${outputname} $name
-     ln -sr #{name}/${pkgver}/${outputname} ${outputname}
+     ln -sr #{@name}/${pkgver}/${outputname} $name
+     ln -sr #{@name}/${pkgver}/${outputname} ${outputname}
  }
 
+FUNCTIONS
 
-PKGBUILD4
+    ## Install in a maven-like environment ?
+    ## ${groupId.replace('.','/')}/${artifactId}/${version}/${artifactId}-${version}${classifier==null?'':'-'+classifier}.${type}
+    
+    pkgbuild = pkgbuild + package + install + functions
+    
+    return pkgbuild
+    
+  end
+  
 
- ## Install in a maven-like environment ?
- ## ${groupId.replace('.','/')}/${artifactId}/${version}/${artifactId}-${version}${classifier==null?'':'-'+classifier}.${type}
 
-    pkgbuild = pkgbuild + pkgbuild2 + pkgbuild3 + pkgbuild4
- 
-    # write pkgbuild
-    puts "writing pkgbuild..."
-    File.open(foldername+"/PKGBUILD", 'w') { |file| file.write(pkgbuild) }
-
-    # create the POM
+  def build_pom
     
     pom = <<-POM
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>tech.lity.rea</groupId>
-    <artifactId>#{name}</artifactId>
+    <artifactId>#{@name}</artifactId>
     <version>1-dummy</version>
     <packaging>jar</packaging>
 
-    <name>#{name}</name>
+    <name>#{@name}</name>
     <description></description>
     <url></url>
     
@@ -231,14 +250,14 @@ PKGBUILD4
     
     <dependencies>
       <dependency>
-	<groupId>#{groupid}</groupId>
-	<artifactId>#{artifactid}</artifactId>
-	<version>#{version}</version>
+	<groupId>#{@groupid}</groupId>
+	<artifactId>#{@artifactid}</artifactId>
+	<version>#{@version}</version>
       </dependency>
     </dependencies>
 POM
 
-    if compact
+    if @compact
       pom = pom + <<-POM2
 
     <build>
@@ -266,25 +285,7 @@ POM2
     end 
 
     pom = pom + " </project> "
-    
-    # write pom
-    puts "Writing pom..."
-    File.open(foldername+"/pom.xml", 'w') { |file| file.write(pom) }
-
-    currentdir = Dir.pwd
-    
-    Dir.chdir foldername
-    `makepkg -f >> build.log`
-    `cp *.pkg.tar.xz ../pkgs`
-    
-    Dir.chdir currentdir
-    
-    puts "Finished, you can check the folder #{name}."
-
+    return pom
   end
-
-
-
-
   
 end
