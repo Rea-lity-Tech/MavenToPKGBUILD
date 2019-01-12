@@ -1,23 +1,53 @@
 #!/usr/bin/env ruby
-
 require 'yaml'
+require 'optparse'
 require 'MavenToPKGBUILD'
 
 include MavenToPKGBUILD
 
-if ARGV[0] != nil
-  output = ARGV[0]
-else
-  output = "deps.yaml"
+
+output = "deps.yaml"
+classpath_name = "classpath.txt"
+
+options = {}
+op = OptionParser.new do |opts|
+  opts.banner = <<-USAGE
+Usage: pkg-maven file.yaml [name/all] [options]
+or   : pkg-maven artifactId groupId version [options]
+USAGE
+  
+  opts.on("-c", "--classpath", "Create a classpath output file.") do |v|
+    options[:classpath] = v
+  end
+
+  opts.on("-oFILE", "--output=FILE", "Output file name. #{output} by default.") do |n|
+    options[:output] = n
+  end
+
+  opts.on("-aARCH", "--arch=ARCH", "Selected architure, x86_64 by default.") do |n|
+    options[:arch] = n
+  end
+
+  opts.on("-vVERSION", "--version=VERSION", "Minor version, default is 1.") do |n|
+    options[:version] = n
+  end
+
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
 end
+op.parse!
+
+output = ARGV[0] if ARGV[0] != nil
 
 # platforms = ["linux", "windows", "macosx"]
 # archs = ["x86_64", "x86", "arm"]
 
 platform="linux"
-arch="x86_64"
-
+arch= options.fetch(:arch, "x86_64")
 tmp = "tmp.txt"
+
 `mvn dependency:list -Djavacpp.platform=#{platform}-#{arch} -DoutputFile=#{tmp}`
 
 lines = File.readlines tmp
@@ -42,18 +72,18 @@ lines.each do |l|
 end 
 
 
-# TODO: Ignore completely ?!!
+# TODO: Ignore it also before ?
+# Remove an element if there is one with the -platform also.
+# For Javacpp-presets.
 without_platform = all_deps.map do |dep|
   next if all_deps.has_key?(dep[0]+"-platform")
   dep[1]
 end.compact!
-## reject the empty ones created by next
+## compact rejects the empty ones created by next
 
 without_platform.each do |dep|
-  ## jar name 
   v = create_pkg_version(dep["version"])
   n = dep["artifactid"]
-
   dep_file =  prefix + n + "-" + v + ".jar"
 
   if File.exist?(dep_file)
@@ -68,5 +98,5 @@ end
 
 
 File.open(output, 'w') {|f| f.write all_deps.to_yaml }
-File.open("classpath.txt", 'w') {|f| f.write all_deps_jar }
+File.open(classpath_name, 'w') {|f| f.write all_deps_jar }
 

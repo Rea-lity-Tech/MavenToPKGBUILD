@@ -19,7 +19,7 @@ module MavenToPKGBUILD
     @version = version
     @groupid = groupid
     @full = full
-    @name = artifactid if  name.nil?
+    @name = artifactid if name.nil?
     @foldername = @name
 
     ## Options

@@ -1,13 +1,16 @@
 #!/usr/bin/env ruby
-
 require 'optparse'
-
 require 'MavenToPKGBUILD'
+
+include MavenToPKGBUILD
 
 options = {}
 op = OptionParser.new do |opts|
-  opts.banner = "Usage: pkg-maven file.yaml [name/all] [options]"
-
+  opts.banner = <<-USAGE
+Usage: pkg-maven file.yaml [name/all] [options]
+or   : pkg-maven artifactId groupId version [options]
+USAGE
+  
   opts.on("-f", "--full", "Fetch all dependencies") do |v|
     options[:full] = v
   end
@@ -31,34 +34,26 @@ op = OptionParser.new do |opts|
 end
 op.parse!
 
-if(ARGV.size <= 1)
-  puts op
-  exit
-end
-
-# p options
-# p ARGV
-
-include MavenToPKGBUILD
+def error;  puts op ; exit ; end
+def yaml?(s); s.end_with? 'yaml' or s.end_with? 'yml' ; end
 
 
-if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
+error if ARGV.size <= 1
+
+if yaml?(ARGV[0])
   files = YAML.load_file ARGV[0]
 
-  arch = ARGV[2] unless  ARGV[2].nil?
-  
   # case 1: build all.
   if(ARGV[1].eql? "all")
 
     ## Filter the non-platform deps from javacpp-presets
-
     without_platform = files.map do |dep|
       next if files.has_key?(dep[0]+"-platform")
       dep[1]
     end.compact!
     ## reject the empty ones created by next
     
-    without_platform.each{ |pkg| puts "BUILD" + pkg.to_s ; build_pkg(pkg, options) }
+    without_platform.each{ |pkg|  build_pkg(pkg, options) }
     return
   end
   
@@ -68,7 +63,6 @@ if(ARGV[0].end_with? '.yaml' or ARGV[0].end_with? ".yml")
     build_pkg(pkg, options)
     return
   end
-
   return
 end
   
@@ -78,14 +72,9 @@ if(ARGV.size < 3)
   return
 end
 
-name = ARGV[0]         # redis
+artifactId = ARGV[0]         # redis
 groupid = ARGV[1]      # redis.clients
 version = ARGV[2]      # 2.9.0
-artifactid = name  
+name = artifactId
 
-arch = ARGV[3] unless  ARGV[3].nil?
-
-#artifactid = ARGV[3] if ARGV.size > 3 # jedis
-
-# build it !
 build(name, groupid, version, artifactid, options)
