@@ -12,13 +12,12 @@ classpath_name = "classpath.txt"
 options = {}
 op = OptionParser.new do |opts|
   opts.banner = <<-USAGE
-Usage: pkg-maven file.yaml [name/all] [options]
-or   : pkg-maven artifactId groupId version [options]
+Usage: pkg-maven-list-deps   # a pom.xml file is required in the folder.
 USAGE
   
-  opts.on("-c", "--classpath", "Create a classpath output file.") do |v|
-    options[:classpath] = v
-  end
+  # opts.on("-c", "--classpath", "Create a classpath output file.") do |v|
+  #   options[:classpath] = v
+  # end
 
   opts.on("-oFILE", "--output=FILE", "Output file name. #{output} by default.") do |n|
     options[:output] = n
