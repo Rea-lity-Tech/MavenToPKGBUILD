@@ -12,7 +12,7 @@ classpath_name = "classpath.txt"
 options = {}
 op = OptionParser.new do |opts|
   opts.banner = <<-USAGE
-Usage: pkg-maven-list-deps   # a pom.xml file is required in the folder.
+Usage: pkg-maven-list-deps [output.yaml]  # a pom.xml file is required in the folder.
 USAGE
   
   # opts.on("-c", "--classpath", "Create a classpath output file.") do |v|
