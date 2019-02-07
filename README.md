@@ -82,7 +82,7 @@ java -cp $CP:target/* tech.lity.rea.nectar.camera.Test
 ### TODO: 
 
 * ~Gemify this~.
-* Deploy Gem.
+* ~Deploy Gem~.
 * Update README.
 * More tests. 
 * Better parsing. 
