@@ -5,7 +5,7 @@ require "MavenToPKGBUILD/version"
 module MavenToPKGBUILD
 
   def create_pkg_version(version)
-    version.delete_prefix("'").delete_suffix("'").split("-").first
+    version.to_s.delete_prefix("'").delete_suffix("'").split("-").first
   end
   
   def build_pkg(pkg, options)
@@ -28,7 +28,7 @@ module MavenToPKGBUILD
 
     ## PKGBUILD variables
     ## Sometimes there are quotes in version names.
-    @pkgversion = @version.delete_prefix("'").delete_suffix("'")
+    @pkgversion = @version.to_s.delete_prefix("'").delete_suffix("'")
     @pkgarch = "any" 
     @pkgrel = options.fetch :version, "1"
     @compact_pkg = @compact ? "-compact" : ""
@@ -108,11 +108,11 @@ CONFIG
     if @javacpp
       config = config + "  mvn dependency:copy-dependencies\n "
     else
-      config = config + "  mvn dependency:copy-dependencies -Djavacpp.platform=#{@platform}-#{arch} \n "
+      config = config + "  mvn dependency:copy-dependencies -Djavacpp.platform=#{@platform}-#{@arch} \n "
     end
 
     if @compact
-      config = config + "  mvn package -Djavacpp.platform=#{@platform}-#{arch} \n "
+      config = config + "  mvn package -Djavacpp.platform=#{@platform}-#{@arch} \n "
     end
 
     ## Continue building
@@ -136,14 +136,14 @@ PACKAGE
 
           # opencv-3.4.0-1.4.jar          ->  #{name}-#{version}-#{javacppversion}.jar
           # opencv-platform-3.4.0-1.4.jar ->  #{name}-platform-#{version}-#{javacppversion}.jar
-          # opencv-3.4.0-1.4-linux-x86_64.jar ->  #{name}-#{version}-#{javacppversion}-#{@platform}-#{arch}.jar
+          # opencv-3.4.0-1.4-linux-x86_64.jar ->  #{name}-#{version}-#{javacppversion}-#{@platform}-#{@arch}.jar
           # javacpp-1.4.jar -> javacpp-#{javacppversion}.jar   ## Not sure yet!
 
           install = <<-INSTALL
          # jar-name, output-jar-name, link-name 
         installJavaCPP '#{@name}-#{@pkgversion}-#{@javacppversion}.jar' '#{@name}-#{@pkgversion}.jar' '#{@name}.jar'       
         installJavaCPP '#{@name}-platform-#{@pkgversion}-#{@javacppversion}.jar' '#{@name}-platform-#{@pkgversion}.jar' '#{@name}-platform.jar'       
-        installJavaCPP '#{@name}-#{@pkgversion}-#{@javacppversion}-#{@platform}-#{arch}.jar' '#{@name}-#{@pkgversion}-#{@platform}-#{arch}.jar' '#{@name}-#{@platform}-#{arch}.jar'       
+        installJavaCPP '#{@name}-#{@pkgversion}-#{@javacppversion}-#{@platform}-#{@arch}.jar' '#{@name}-#{@pkgversion}-#{@platform}-#{@arch}.jar' '#{@name}-#{@platform}-#{@arch}.jar'       
 
       INSTALL
         else 
@@ -202,7 +202,7 @@ FUNCTIONS
     ## Install in a maven-like environment ?
     ## ${groupId.replace('.','/')}/${artifactId}/${version}/${artifactId}-${version}${classifier==null?'':'-'+classifier}.${type}
     
-    pkgbuild = pkgbuild + package + install + functions
+    pkgbuild =  config + package + install + functions
     
     return pkgbuild
     
