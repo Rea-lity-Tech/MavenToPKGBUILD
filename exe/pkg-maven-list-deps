@@ -80,6 +80,11 @@ without_platform = all_deps.map do |dep|
 end.compact!
 ## compact rejects the empty ones created by next
 
+if without_platform.nil?
+  puts "No dependency found."
+  exit
+end
+
 without_platform.each do |dep|
   v = create_pkg_version(dep["version"])
   n = dep["artifactid"]
