@@ -10,50 +10,46 @@ Please do not submit the generated PKGBUILDs to the ArchLinux repository without
 
 ## How to use
 
-#### 1. Build a specific project:
-
-`pkg-maven DATABASE.yaml PROJECT`
-
-You can try it: 
-
-`pkg-maven package.yaml jedis` 
-
-#### 2. Build all the projects: 
+#### 1. Create the dependency list
 
 
-Create a package for each dependency in the database. It is quite simple for now and does not handle double entry or version conflicts.
+Go to a maven project where the `pom.xml` file resides: 
 
-`pkg-maven DATABASE.yaml all`
+`pkg-maven-list-deps`
 
-You can try it: 
+* It creates a `deps.yaml` file listing the dependencies, used later to create packages. 
+* The output of the execution lists which dependencies are already installed. 
+* It create a `classpath.txt` text file containing the classpath to use. 
 
-`pkg-maven package.yaml all` 
+When all packages are created and installed you can use this classpath file like this: 
 
-#### 3. Build a package by its name. 
+``` bash 
+CP=$(<classpath.txt)
+java -cp $CP:target/* tech.lity.rea.app.Demo
+```
 
-You can also try it: 
+#### 2. Create packages from the dependency list
+
+Create a package for each dependency in the database. It is quite simple for now and does not handle double entry or version conflicts. You can create a new folder and try to build all the dependencies: 
+
+``` bash 
+mkdir dist ; cd dist 
+pkg-maven ../deps.yaml all
+```
+
+The output packages are collected to the `pkg` folder. 
+
+
+#### Alternative use: build a package by its name. 
+
+If you only miss few packages, or your project is small you can get packages one by one. 
 
 `pkg-maven jedis redis.clients 2.9.0` 
 
-This will create a package for **one jar only**. You can get get its dependencies by going in the folder and running the `pkg-maven-list-deps` script. 
+This will create a package for **one jar only**. You can get get its dependencies by going in the folder and running the `pkg-maven-list-deps` script. For jedis, there are no external dependencies. 
 
-``` bash 
-cd jedis
-pkg-maven-list-deps jedis.yaml   ## here jedis.yaml is the output file name, the default is deps.yaml
-```
-You can then use the `jedis.yaml` to create more packages !
+The resulting package is:`pkg/java-jedis-2.9.0-1-any.pkg.tar.xz`.
 
-If the generated name does not seem correct, you can add a `name` field: 
-
-``` yaml
-jedis:
-  groupid: redis.clients
-  artifactid: jedis
-  version: 2.9.0
-  name: redis
-``` 
-
-With this modification, the package name will be: `java-redis`. 
 
 ## Options 
 
@@ -69,20 +65,10 @@ Here is an example:
 `sudo pacman -U pkgs/java-jedis-2.9.0-1-any.pkg.tar.xz`
 
 
-## Running an application 
-
-The program `pkg-maven-list-deps` creates a `classpath.txt` that contains all the dependencies. You can use this way: 
-
-``` bash
-CP=$(<classpath.txt)
-java -cp $CP:target/* tech.lity.rea.nectar.camera.Test
-``` 
-
-
 ### TODO: 
 
 * ~Gemify this~.
 * ~Deploy Gem~.
-* Update README.
+* ~Update README~ to improve.
 * More tests. 
 * Better parsing. 
