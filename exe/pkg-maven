@@ -5,7 +5,7 @@ require 'MavenToPKGBUILD'
 include MavenToPKGBUILD
 
 options = {}
-op = OptionParser.new do |opts|
+@op = OptionParser.new do |opts|
   opts.banner = <<-USAGE
 Usage: pkg-maven file.yaml [name/all] [options]
 or   : pkg-maven artifactId groupId version [options]
@@ -32,9 +32,9 @@ USAGE
     exit
   end
 end
-op.parse!
+@op.parse!
 
-def error;  puts op ; exit ; end
+def error;  puts @op ; exit ; end
 def yaml?(s); s.end_with? 'yaml' or s.end_with? 'yml' ; end
 
 
@@ -79,4 +79,4 @@ groupid = ARGV[1]      # redis.clients
 version = ARGV[2]      # 2.9.0
 name = artifactId
 
-build(name, groupid, version, artifactid, options)
+build(name, groupid, version, artifactId, options)
