@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# coding: utf-8
 require 'yaml'
 require 'optparse'
 require 'MavenToPKGBUILD'
@@ -56,6 +57,15 @@ all_deps = {}
 all_deps_jar = ""
 prefix = "/usr/share/java/"
 
+
+## JOGL custom code
+# add  -native to jogl
+#gl = ["jogl", "jogl-all", "newt", "nativewindow", "gluegen-rt"]
+# /usr/share/java/jogl-all-with-deps/2.3.2/*
+
+use_jogl = false
+
+
 lines.each do |l|
   groupid, artifactid, type, version = l.strip.split ":"
 
@@ -67,9 +77,22 @@ lines.each do |l|
   dep["artifactid"] = artifactid
   dep["version"] = version
 
-  all_deps[artifactid] = dep
-end 
+  ## TODO: use the gl variable instead ?
+  if artifactid.eql? "jogl-all" or artifactid.eql? "jogl-all-main"  or artifactid.eql? "gluegen" or artifactid.eql? "gluegen-rt"
+    use_jogl = true
 
+    next
+    # dep["version"] = "2.3.2"
+    # dep_native = {}
+    # dep_native["groupid"] = groupid
+    # dep_native["artifactid"] = artifactid
+    # dep_native["version"] =  "natives-linux-amd64"
+    # all_deps[artifactid+"-native"] = dep_native
+  end
+  
+  all_deps[artifactid] = dep  
+
+end 
 
 # TODO: Ignore it also before ?
 # Remove an element if there is one with the -platform also.
@@ -85,6 +108,7 @@ if without_platform.nil?
   exit
 end
 
+
 without_platform.each do |dep|
   v = create_pkg_version(dep["version"])
   n = dep["artifactid"]
@@ -99,6 +123,12 @@ without_platform.each do |dep|
   all_deps_jar = all_deps_jar + ":" unless all_deps_jar.empty?
   all_deps_jar = all_deps_jar + dep_file
 end
+
+if use_jogl
+  dep_jogl = prefix + "jogl-all-with-deps/2.3.2/*"
+  all_deps_jar = all_deps_jar + ":" + dep_jogl
+end
+
 
 
 File.open(output, 'w') {|f| f.write all_deps.to_yaml }
