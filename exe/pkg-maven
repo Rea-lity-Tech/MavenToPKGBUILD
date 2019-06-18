@@ -5,7 +5,7 @@ require 'MavenToPKGBUILD'
 include MavenToPKGBUILD
 
 options = {}
-op = OptionParser.new do |opts|
+@op = OptionParser.new do |opts|
   opts.banner = <<-USAGE
 Usage: pkg-maven file.yaml [name/all] [options]
 or   : pkg-maven artifactId groupId version [options]
@@ -32,9 +32,9 @@ USAGE
     exit
   end
 end
-op.parse!
+@op.parse!
 
-def error;  puts op ; exit ; end
+def error;  puts @op ; exit ; end
 def yaml?(s); s.end_with? 'yaml' or s.end_with? 'yml' ; end
 
 
@@ -49,6 +49,7 @@ if yaml?(ARGV[0])
     ## Filter the non-platform deps from javacpp-presets
     without_platform = files.map do |dep|
       next if files.has_key?(dep[0]+"-platform")
+      dep[1]["name"] = dep[0]
       dep[1]
     end.compact!
     ## reject the empty ones created by next
@@ -60,6 +61,7 @@ if yaml?(ARGV[0])
   # case 2: build a specific one
   pkg = files[ARGV[1]]
   unless pkg.nil?
+    pkg["name"] = ARGV[1]
     build_pkg(pkg, options)
     return
   end
@@ -77,4 +79,4 @@ groupid = ARGV[1]      # redis.clients
 version = ARGV[2]      # 2.9.0
 name = artifactId
 
-build(name, groupid, version, artifactid, options)
+build(name, groupid, version, artifactId, options)
