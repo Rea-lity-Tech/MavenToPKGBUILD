@@ -1,0 +1,96 @@
+#!/usr/bin/env ruby
+require 'yaml'
+require 'optparse'
+require 'MavenToPKGBUILD'
+require 'colorize'
+
+include MavenToPKGBUILD
+
+default = "classpath.txt"
+options = {}
+op = OptionParser.new do |opts|
+  opts.banner = <<-USAGE
+Usage: pkg-maven-check-classpath [classpath-file.txt] 
+USAGE
+  
+  # opts.on("-c", "--classpath", "Create a classpath output file.") do |v|
+  #   options[:classpath] = v
+  # end
+
+  opts.on("-fFILE", "--cpfile=FILE", "Classpath File name. #{default} by default.") do |n|
+    options[:output] = n
+  end
+
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+  
+end
+
+if ARGV[0] != nil
+  output = ARGV[0]
+else
+  output= options.fetch(:arch, default)
+end
+
+if not File.exist? output
+  puts "Cannot find the file: " + output + ", exiting."
+  exit
+end
+  
+# if output.nil? 
+#   puts op
+#   exit
+# end
+
+def error(message)
+  puts message
+  exit
+end
+
+puts "Checking the content of " + output + "..."
+
+lines = File.readlines output
+
+error "Invalid file" if(lines.size == 0)
+
+packages = []
+
+files_to_check = lines.first.split(":").map(&:strip)
+files_to_check.each do |file|
+  if File.exist?(file)
+    puts "File found: " + file.colorize(color: :light_green)
+  else 
+    puts "Missing:    " + file.colorize(color: :light_yellow)
+
+    possible_p = file.split("/usr/share/java/")[1].split("-")[0]
+
+    output = `pacman -Ss ^#{possible_p}$`
+    if(output.size > 0)
+      puts ("Possible package: " + possible_p ).colorize(color: :light_blue)
+      packages  << possible_p
+    end
+
+    output_java = `pacman -Ss ^java-#{possible_p}$`
+    if(output_java.size > 0)    
+      puts ("Possible package: java-" + possible_p).colorize(color: :light_blue)
+      packages << "java-" + possible_p
+    end
+  end
+
+end
+
+if packages.size > 0
+    # puts "You can try to install these packages"
+    s = ""
+    packages.each { |p| s = s + p.to_s + " "}
+    # puts s
+
+    puts "You can try to install these packages: "
+    puts ("pacman -S " + s).colorize(color: :light_blue)
+  else
+#    puts "Nothing found to install"
+  end
+    
+
