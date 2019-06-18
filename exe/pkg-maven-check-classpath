@@ -64,8 +64,11 @@ files_to_check.each do |file|
   else 
     puts "Missing:    " + file.colorize(color: :light_yellow)
 
-    possible_p = file.split("/usr/share/java/")[1].split("-")[0]
 
+    start = file.split("/usr/share/java/")[1]
+    possible_p = start.split(/-\d/)[0]
+    # possible_p = file.split("/usr/share/java/")[1].split("-")[0]
+    
     output = `pacman -Ss ^#{possible_p}$`
     if(output.size > 0)
       puts ("Possible package: " + possible_p ).colorize(color: :light_blue)
