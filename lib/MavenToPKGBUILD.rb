@@ -170,7 +170,7 @@ INSTALL
      local name=$1
      local artifact=$2
      local opt=$3
-     install -m644 -D ${startdir}/target/dependency/${artifact}-#{@version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}.jar
+     install -m644 -D ${startdir}/target/dependency/${artifact}-${pkgver}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}.jar
      cd ${pkgdir}/usr/share/java/
      ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name.jar
      ln -sr ${name}/${pkgver}/${name}-${pkgver}.jar $name-${pkgver}.jar
@@ -180,7 +180,7 @@ INSTALL
      local name=$1
      local artifact=$2
      local opt=$3
-     install -m644 -D ${startdir}/target/${name}-#{@version}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}${opt}.jar
+     install -m644 -D ${startdir}/target/${name}-${pkgver}${opt}.jar ${pkgdir}/usr/share/java/${name}/${pkgver}/${name}-${pkgver}${opt}.jar
      cd ${pkgdir}/usr/share/java/
      ln -sr ${name}/${pkgver}/${name}-${pkgver}${opt}.jar $name${opt}.jar
  }
